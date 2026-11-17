@@ -48,7 +48,9 @@ jobs:
         run: npx eslint src --max-warnings 0
 
       - name: Package
-        run: npm run package -- ${{ matrix.target }}
+        # Artifacts are uploaded below (and tagged releases use gh). Without
+        # this, electron-builder sees CI and fails looking for GH_TOKEN.
+        run: npm run package -- ${{ matrix.target }} --publish never
 
       - uses: actions/upload-artifact@v7
         with:
