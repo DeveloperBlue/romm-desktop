@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdirSync as makeDir, symlinkSync } from "node:fs";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import { test } from "node:test";
 import { MAX_PLATFORM_QUERIES } from "../shared/types.ts";
 import { testConfig } from "../test/config.ts";
@@ -77,7 +77,7 @@ test("safeFileName defuses traversal sequences", () => {
   const name = safeFileName("../../etc/passwd");
   assert.ok(!name.includes("/"), "no path separator survives");
   assert.ok(!name.includes("\\"), "no windows separator survives");
-  assert.equal(join("/cache", name), `/cache/${name}`);
+  assert.equal(posix.join("/cache", name), `/cache/${name}`);
 });
 
 test("safeFileName always yields a non-empty name", () => {

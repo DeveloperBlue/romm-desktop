@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import { test } from "node:test";
 import { withDetectedDefaults } from "./config-defaults.ts";
 import { testConfig } from "../test/config.ts";
@@ -18,9 +19,9 @@ test("fills unset paths from detection and userData", () => {
   });
   assert.equal(view.retroarchPath, "/usr/bin/retroarch");
   assert.equal(view.retroarchCoresPath, "/home/sam/.config/retroarch/cores");
-  assert.equal(view.cachePath, "/home/sam/.config/romm-desktop/rom-cache");
-  assert.equal(view.biosPath, "/home/sam/.config/romm-desktop/bios");
-  assert.equal(view.saveDataPath, "/home/sam/.config/romm-desktop/save-data");
+  assert.equal(view.cachePath, join(LINUX.userData, "rom-cache"));
+  assert.equal(view.biosPath, join(LINUX.userData, "bios"));
+  assert.equal(view.saveDataPath, join(LINUX.userData, "save-data"));
 });
 
 test("a value the user set is never replaced by detection", () => {

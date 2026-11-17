@@ -59,7 +59,8 @@ test("unrelated files, folders, symlinks, oversized and empty captures are not s
   await writeFile(join(directory, "empty.png"), "");
   await writeFile(join(directory, "huge.png"), "");
   await truncate(join(directory, "huge.png"), MAX_SCREENSHOT_BYTES + 1);
-  await writeFile(join(directory, 'capture".bmp'), "image");
+  const captureName = process.platform === "win32" ? "capture.bmp" : 'capture".bmp';
+  await writeFile(join(directory, captureName), "image");
   const result = await pushScreenshots({ directory, signal: new AbortController().signal,
     upload: async ({ fileName }) => {
       assert.ok(fileName.endsWith(".bmp"));
