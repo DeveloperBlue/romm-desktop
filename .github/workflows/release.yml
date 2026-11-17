@@ -3,7 +3,10 @@ name: Release
 on:
   push:
     tags: ["v*"]
-  # Build the installers without releasing them, to check packaging changes.
+  # Manual packaging for the patch branch (or any ref). In the Actions UI, pick
+  # developerblue/fix/pairing-patch, then Run workflow. Artifacts appear on
+  # the run page when the job finishes; nothing is published unless this was a
+  # tag push.
   workflow_dispatch:
 
 permissions: read-all
@@ -16,10 +19,10 @@ jobs:
         include:
           - os: ubuntu-latest
             target: --linux
+            artifact: linux-appimage
           - os: windows-latest
             target: --win
-          - os: macos-latest
-            target: --mac
+            artifact: windows-zip
     runs-on: ${{ matrix.os }}
     env:
       # electron-builder fetches the Electron distributions it packages, so the
@@ -49,7 +52,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.os }}
+          name: ${{ matrix.artifact }}
           path: |
             release/*.AppImage
             release/*.zip
@@ -76,4 +79,4 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --title "${GITHUB_REF_NAME}" \
             --draft \
-            --notes "Builds are unsigned. macOS needs Gatekeeper approved under Privacy and Security, and Windows shows a SmartScreen warning. Review and edit these notes before publishing."
+            --notes "Builds are unsigned. Windows shows a SmartScreen warning. Review and edit these notes before publishing."
