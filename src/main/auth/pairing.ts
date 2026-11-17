@@ -19,7 +19,7 @@ export interface PairingRecord {
   server: string;
   userId: number;
   deviceId: string;
-  tokenId: number;
+  tokenId: number | null;
   token: string;
   expiresAt: string | null;
 }
@@ -34,8 +34,11 @@ function object(value: unknown): Record<string, unknown> {
 
 export function readPairingRecord(value: unknown, server: string): PairingRecord {
   const row = object(value);
+  const tokenIdOk =
+    row.tokenId === null ||
+    (Number.isSafeInteger(row.tokenId) && (row.tokenId as number) >= 1);
   if (row.server !== new URL(server).origin || !Number.isSafeInteger(row.userId) || (row.userId as number) < 1 ||
-      !Number.isSafeInteger(row.tokenId) || (row.tokenId as number) < 1 ||
+      !tokenIdOk ||
       typeof row.deviceId !== "string" || !row.deviceId || row.deviceId.length > 255 ||
       typeof row.token !== "string" || !/^rmm_[A-Za-z0-9_-]+$/.test(row.token) || row.token.length > 4096 ||
       (row.expiresAt !== null && (typeof row.expiresAt !== "string" || !Number.isFinite(Date.parse(row.expiresAt))))) {
@@ -101,8 +104,12 @@ export async function pairDevice(options: {
     if (reply.status === 429) { interval += 5000; continue; }
     const data = object(reply.body);
     if (reply.status === 200) {
+      const tokenId =
+        Number.isSafeInteger(data.id) && (data.id as number) >= 1
+          ? (data.id as number)
+          : null;
       const record = readPairingRecord({
-        server, userId: 1, deviceId: data.device_id, tokenId: data.id,
+        server, userId: 1, deviceId: data.device_id, tokenId,
         token: data.access_token, expiresAt: data.expires_at,
       }, server);
       const { userId: _userId, ...result } = record;

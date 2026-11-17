@@ -4,7 +4,7 @@ import { DEVICE_SCOPES, requirePairing, mayUsePairing, pairedHeaders, pairDevice
 
 const server = "https://romm.test";
 const challenge = { device_code: "a".repeat(64), user_code: "ABCDEFGH", expires_in: 600, interval: 5 };
-const token = { id: 1, access_token: "rmm_secret", device_id: "device-7", expires_at: null };
+const token = { access_token: "rmm_secret", device_id: "device-7", scopes: ["me.read"], expires_at: null };
 
 function fixture(replies: { status: number; body: unknown }[]) {
   let time = 0;
@@ -38,7 +38,7 @@ test("pairing requests explicit scopes and exchanges only after the server caden
     { status: 200, body: token },
   ]);
   assert.deepEqual(await pairDevice(f.options), {
-    server, token: "rmm_secret", tokenId: 1, deviceId: "device-7", expiresAt: null,
+    server, token: "rmm_secret", tokenId: null, deviceId: "device-7", expiresAt: null,
   });
   assert.deepEqual(f.delays, [5000, 5000, 10000, 15000]);
   assert.deepEqual(f.shown, ["ABCDEFGH", `${server}/pair/device?user_code=ABCDEFGH`]);
@@ -88,10 +88,22 @@ test("bearer headers are API-only and never combined with cookie auth", () => {
 test("stored credentials reject foreign servers, malformed tokens and invalid owners", () => {
   const record = { server, userId: 7, deviceId: "device", tokenId: 2, token: "rmm_secret", expiresAt: null };
   assert.deepEqual(readPairingRecord(record, server), record);
+  assert.deepEqual(
+    readPairingRecord({ ...record, tokenId: null }, server),
+    { ...record, tokenId: null },
+  );
   for (const patch of [{ server: "https://evil.test" }, { userId: 0 }, { token: "rmm_secret\r\nInjected: true" },
-    { tokenId: -1 }, { deviceId: "" }, { expiresAt: "not a date" }]) {
+    { tokenId: -1 }, { tokenId: 0 }, { tokenId: undefined }, { deviceId: "" }, { expiresAt: "not a date" }]) {
     assert.throws(() => readPairingRecord({ ...record, ...patch }, server));
   }
+});
+
+test("a token response that still names a client-token id keeps it", async () => {
+  const f = fixture([
+    { status: 201, body: challenge },
+    { status: 200, body: { ...token, id: 9 } },
+  ]);
+  assert.equal((await pairDevice(f.options)).tokenId, 9);
 });
 
 test("pairing requests both scopes required by firmware platform resolution", () => {
